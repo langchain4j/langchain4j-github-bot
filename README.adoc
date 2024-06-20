@@ -1,0 +1,166 @@
+= LangChain4j GitHub Bot
+
+> A Quarkus-powered GitHub App to simplify issues and pull requests management in the LangChain4j project.
+
+== Introduction
+
+This GitHub App is based on the https://github.com/quarkiverse/quarkus-github-app[Quarkus GitHub App framework].
+
+It can be run as a native executable.
+
+== Current Actions
+
+=== Triage issues
+
+Based on the `.github/langchain4j-github-bot.yml` file, this rule affects labels to issues and also pings the appropriate people.
+
+Syntax of the `.github/langchain4j-github-bot.yml` file is as follows:
+
+[source, yaml]
+----
+triage:
+  rules:
+    - labels: [Azure]
+      title: "azure"
+      notify: [developer1,developer2]
+      files:
+        - langchain4j-azure-ai-search
+        - langchain4j-azure-cosmos-mongo-vcore
+        - langchain4j-azure-cosmos-nosql
+        - langchain4j-azure-open-ai
+    - labels: [OpenAI]
+      title: "openai"
+      notify: [developer3]
+      files:
+        - langchain4j-open-ai
+----
+
+For issues, each rule can be triggered by:
+
+* `title` - if the title matches this regular expression (case insensitively), trigger the rule
+* `body` - if the body (i.e. description) matches this regular expression (case insensitively), trigger the rule
+* `titleBody` - if either the title or the body (i.e. description) match this regular expression (case insensitively), trigger the rule
+* `expression` - allows to write a Jakarta EL expression testing `title`, `body` or `titleBody`. Be careful when writing expressions, better ping `@gsmet` in the pull request when creating/updating an expression.
+
+[TIP]
+====
+When writing expressions, you can use the `matches(String pattern, String string)` function that behaves as follows:
+
+[source,java]
+----
+public static boolean matches(String pattern, String string) {
+    return Pattern.compile(".*" + pattern + ".*", Pattern.DOTALL | Pattern.CASE_INSENSITIVE).matcher(string)
+            .matches();
+}
+----
+
+A rule using an expression based on `matches()` would look like:
+
+[source,yaml]
+----
+    - labels: [OpenAI]
+      expression: |
+              matches("openai", title)
+              && matches("open.ai", title)
+      notify: [developer1,developer2]
+----
+====
+
+If the rule is triggered, the following actions will be executed:
+
+* `notify` - will create a comment pinging the users listed in the array
+* `labels` - will add the labels to the issue
+
+=== Triage pull requests
+
+The pull requests triage action uses the same configuration file as the issues triage action.
+
+There are a few differences though as it doesn't behave in the exact same way.
+
+For pull requests, each rule can be triggered by:
+
+* `files` - if any file in the commits of the pull requests match, trigger the rule. This is not a regexp (it uses `startsWith`) but glob type expression are supported too `*-azure-*/**` (make sure you enclose globs into `'` in YAML).
+
+If no rule is triggered based on files, or if rules are triggered but they all specify `allowSecondPass: true`,
+a second pass will be executed; in that second pass, rules can be triggered by:
+
+* `title` - if the title matches this regular expression (case insensitively), trigger the rule
+* `body` - if the body (i.e. description) matches this regular expression (case insensitively), trigger the rule
+* `titleBody` - if either the title or the body (i.e. description) match this regular expression (case insensitively), trigger the rule
+* `expression` - allows to write a Jakarta EL expression testing `title`, `body` or `titleBody`. Be careful when writing expressions, better ping `@gsmet` in the pull request when creating/updating an expression.
+
+If the rule is triggered, the following action will be executed:
+
+* `labels` - will add the labels to the issue
+* `notify` - will create a comment pinging the users listed in the array **only if `notifyInPullRequest` is true**
+
+`notifyInPullRequest` should be used as follows:
+
+[source, yaml]
+----
+triage:
+  rules:
+    - labels: [Azure]
+      title: "azure"
+      notify: [developer1,developer2]
+      notifyInPullRequest: true
+      files:
+        - langchain4j-azure-ai-search
+        - langchain4j-azure-cosmos-mongo-vcore
+        - langchain4j-azure-cosmos-nosql
+        - langchain4j-azure-open-ai
+----
+
+=== Triage discussions
+
+The rules applied for issues and pull requests are also applied to discussions, as long as the category is monitored.
+
+Monitoring a category is enabled with:
+
+[source, yaml]
+----
+triage:
+  discussions:
+    monitoredCategories: [33575230]
+----
+
+The number is the numeric id as present in the JSON event payload.
+
+=== Enforce color for specific labels
+
+The bot enforces a specific color for any label created that starts with `area/` so that all these labels are consistent.
+
+== Contributing
+
+To participate to the development of this GitHub App, create a playground project in your own org and
+follow the steps outlined in https://quarkiverse.github.io/quarkiverse-docs/quarkus-github-app/dev/index.html[the Quarkus GitHub App documentation].
+
+GitHub permissions required:
+
+* Contents - `Read only`
+* Discussions - `Read & Write`
+* Issues - `Read & Write`
+* Pull Requests - `Read & Write`
+
+Events to subscribe to:
+
+* Discussions
+* Issues
+* Label
+* Pull Request
+
+By default, in dev mode, the Bot runs in dry-run so it's logging its actions but do not perform them.
+You can override this behavior by adding `_DEV_LANGCHAING4J_GITHUB_BOT_DRY_RUN=false` to your `.env` file.
+
+== Deployment
+
+Once logged in to the OpenShift cluster (using `oc login...`), just run:
+
+[source, bash]
+----
+$ ./deploy-to-openshift.sh
+----
+
+== License
+
+This project is licensed under the Apache License Version 2.0.
