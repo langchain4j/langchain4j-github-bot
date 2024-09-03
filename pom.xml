@@ -21,7 +21,7 @@
         <glob.version>0.9.0</glob.version>
         <assertj.version>3.26.3</assertj.version>
 
-        <version.buildnumber.plugin>3.2.0</version.buildnumber.plugin>
+        <version.buildnumber.plugin>3.2.1</version.buildnumber.plugin>
         <version.formatter.plugin>2.23.0</version.formatter.plugin>
         <version.impsort.plugin>1.11.0</version.impsort.plugin>
     </properties>
