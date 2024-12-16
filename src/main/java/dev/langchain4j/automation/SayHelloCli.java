@@ -8,6 +8,7 @@ import org.kohsuke.github.GHUser;
 import java.io.IOException;
 
 @Cli(name = "@bot", commands = {SayHelloCli.SayHello.class})
+@Cli(name = "@bot", commands = { SayHelloCli.SayHello.class })
 public class SayHelloCli {
 
     interface Commands {
